@@ -25,7 +25,6 @@ func getStat(fs fs.FileInfo) (*statT, error) {
 	if !ok {
 		return nil, fmt.Errorf("syscall.Stat_t is not *syscall.Stat_t")
 	}
-	nlink := stat.Nlink
 
 	// ユーザID
 	uid := strconv.Itoa(int(stat.Uid))
@@ -46,7 +45,7 @@ func getStat(fs fs.FileInfo) (*statT, error) {
 	}
 
 	return &statT{
-		nlink: nlink,
+		nlink: stat.Nlink,
 		owner: owner,
 		group: group,
 	}, nil
