@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -68,41 +67,76 @@ func NewLsFlags() *LsFlags {
 	}
 }
 
-func Exec(w io.Writer, lf *LsFlags) {
+type LS struct {
+	Mode    string
+	Nlink   uint16
+	Owner   string
+	Group   string
+	Size    string
+	ModTime string
+	Name    string
+
+	*LsFlags
+}
+
+func Ls(ls *LsFlags) ([]*LS, error) {
 	// 現在の作業ディレクトリを取得する
 	wd, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	// ファイル一覧を表示する
 	files, err := ioutil.ReadDir(wd)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+
+	fs := make([]*LS, 0, len(files))
 	for _, file := range files {
-		if !lf.showAll && file.Name()[0] == '.' {
+		if !ls.showAll && file.Name()[0] == '.' {
 			// -a オプションが指定されていない場合、隠しファイルを表示しない
 			continue
 		}
-		if lf.showDetails {
+		if ls.showDetails {
 			st, err := getStat(file)
 			if err != nil {
-				log.Fatal(err)
+				return nil, err
 			}
 			// ファイルのパーミッション、オーナー、グループ、モード、サイズ、更新日時を表示する
 			mode := file.Mode()
 			size := file.Size()
 			modTime := file.ModTime().Format("1 _2 15:04")
-			fmt.Fprintf(w, "%s %d %s %s %s %s %s\n", mode.String(), st.nlink, st.owner, st.group, strconv.FormatInt(size, 10), modTime, file.Name())
+			fs = append(fs, &LS{
+				Mode:    mode.String(),
+				Nlink:   st.nlink,
+				Owner:   st.owner,
+				Group:   st.group,
+				Size:    strconv.FormatInt(size, 10),
+				ModTime: modTime,
+				Name:    file.Name(),
+			})
 		} else {
 			// ファイル名だけ表示する
-			fmt.Fprintln(w, file.Name())
+			fs = append(fs, &LS{
+				Name: file.Name(),
+			})
 		}
 	}
+	return fs, nil
 }
 
 func main() {
-	lf := NewLsFlags()
-	Exec(os.Stdout, lf)
+	nf := NewLsFlags()
+	fs, err := Ls(nf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, f := range fs {
+		if nf.showDetails {
+			fmt.Printf("%s %d %s %s %s %s %s\n", f.Mode, f.Nlink, f.Owner, f.Group, f.Size, f.ModTime, f.Name)
+		} else {
+			fmt.Println(f.Name)
+		}
+	}
 }
