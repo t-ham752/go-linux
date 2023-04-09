@@ -46,7 +46,7 @@ func TestExec(t *testing.T) {
 					Nlink: 1,
 					Owner: "hamoro",
 					Group: "staff",
-					Size:  "0",
+					Size:  5,
 					Mode:  "-rw-r--r--",
 				},
 			},
@@ -60,7 +60,7 @@ func TestExec(t *testing.T) {
 					Nlink: 1,
 					Owner: "hamoro",
 					Group: "staff",
-					Size:  "0",
+					Size:  0,
 					Mode:  "-rw-r--r--",
 				},
 				{
@@ -68,7 +68,29 @@ func TestExec(t *testing.T) {
 					Nlink: 1,
 					Owner: "hamoro",
 					Group: "staff",
-					Size:  "0",
+					Size:  5,
+					Mode:  "-rw-r--r--",
+				},
+			},
+		},
+		{
+			name:  "'-S'と'-l'と'-r'と'-a'フラグを渡して実行",
+			flags: &LsFlags{orderBySizeAsc: true, showDetails: true, showAll: true, reverse: true},
+			want: []*LS{
+				{
+					Name:  ".secret",
+					Nlink: 1,
+					Owner: "hamoro",
+					Group: "staff",
+					Size:  0,
+					Mode:  "-rw-r--r--",
+				},
+				{
+					Name:  "test_file.go",
+					Nlink: 1,
+					Owner: "hamoro",
+					Group: "staff",
+					Size:  5,
 					Mode:  "-rw-r--r--",
 				},
 			},
@@ -83,11 +105,18 @@ func TestExec(t *testing.T) {
 			defer os.RemoveAll("test")
 
 			// ファイルを作成
-			_, err := os.Create("test/test_file.go")
+			f, err := os.Create("test/test_file.go")
 			if err != nil {
 				t.Fatal(err)
 			}
 			_, err = os.Create("test/.secret")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// ファイルへの書き込み
+			data := []byte("hello")
+			_, err = f.Write(data)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"sort"
 	"strconv"
 	"syscall"
 )
@@ -51,19 +52,25 @@ func getStat(fs fs.FileInfo) (*statT, error) {
 }
 
 type LsFlags struct {
-	showDetails bool
-	showAll     bool
+	showDetails    bool
+	showAll        bool
+	orderBySizeAsc bool
+	reverse        bool
 }
 
 func NewLsFlags() *LsFlags {
-	// -l オプションと -a オプションを受け取るためのフラグを定義する
+	// オプションを受け取るためのフラグを定義する
 	showDetails := flag.Bool("l", false, "show details")
 	showAll := flag.Bool("a", false, "show all")
+	orderBySizeDesc := flag.Bool("S", false, "sort by size descending")
+	reverse := flag.Bool("r", false, "reverse order")
 	flag.Parse()
 
 	return &LsFlags{
-		showDetails: *showDetails,
-		showAll:     *showAll,
+		showDetails:    *showDetails,
+		showAll:        *showAll,
+		orderBySizeAsc: *orderBySizeDesc,
+		reverse:        *reverse,
 	}
 }
 
@@ -72,7 +79,7 @@ type LS struct {
 	Nlink   uint16
 	Owner   string
 	Group   string
-	Size    string
+	Size    int64
 	ModTime string
 	Name    string
 
@@ -104,16 +111,13 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 				return nil, err
 			}
 			// ファイルのパーミッション、オーナー、グループ、モード、サイズ、更新日時を表示する
-			mode := file.Mode()
-			size := file.Size()
-			modTime := file.ModTime().Format("1 _2 15:04")
 			fs = append(fs, &LS{
-				Mode:    mode.String(),
+				Mode:    file.Mode().String(),
 				Nlink:   st.nlink,
 				Owner:   st.owner,
 				Group:   st.group,
-				Size:    strconv.FormatInt(size, 10),
-				ModTime: modTime,
+				Size:    file.Size(),
+				ModTime: file.ModTime().Format("1 _2 15:04"),
 				Name:    file.Name(),
 			})
 		} else {
@@ -123,6 +127,21 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 			})
 		}
 	}
+
+	// 昇順にソートする
+	if ls.orderBySizeAsc {
+		sort.SliceStable(fs, func(i, j int) bool {
+			return fs[i].Size > fs[j].Size
+		})
+	}
+
+	// 表示順を反対にする
+	if ls.reverse {
+		for i, j := 0, len(fs)-1; i < j; i, j = i+1, j-1 {
+			fs[i], fs[j] = fs[j], fs[i]
+		}
+	}
+
 	return fs, nil
 }
 
@@ -134,7 +153,7 @@ func main() {
 	}
 	for _, f := range fs {
 		if nf.showDetails {
-			fmt.Printf("%s %d %s %s %s %s %s\n", f.Mode, f.Nlink, f.Owner, f.Group, f.Size, f.ModTime, f.Name)
+			fmt.Printf("%s %d %s %s %s %s %s\n", f.Mode, f.Nlink, f.Owner, f.Group, strconv.FormatInt(f.Size, 10), f.ModTime, f.Name)
 		} else {
 			fmt.Println(f.Name)
 		}
