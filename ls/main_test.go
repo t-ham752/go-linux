@@ -16,7 +16,7 @@ type fileDetails struct {
 	name    string
 }
 
-func TestExec(t *testing.T) {
+func TestLs(t *testing.T) {
 	tests := []struct {
 		name  string
 		flags *LsFlags
@@ -98,6 +98,7 @@ func TestExec(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt
 			// ディレクトリを作成
 			if err := os.Mkdir("test", 0777); err != nil {
 				t.Fatal(err)

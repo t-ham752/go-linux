@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -58,7 +57,7 @@ type LsFlags struct {
 	reverse        bool
 }
 
-func NewLsFlags() *LsFlags {
+func newLsFlags() *LsFlags {
 	// オプションを受け取るためのフラグを定義する
 	showDetails := flag.Bool("l", false, "show details")
 	showAll := flag.Bool("a", false, "show all")
@@ -82,8 +81,6 @@ type LS struct {
 	Size    int64
 	ModTime string
 	Name    string
-
-	*LsFlags
 }
 
 func Ls(ls *LsFlags) ([]*LS, error) {
@@ -94,7 +91,7 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 	}
 
 	// ファイル一覧を表示する
-	files, err := ioutil.ReadDir(wd)
+	files, err := os.ReadDir(wd)
 	if err != nil {
 		return nil, err
 	}
@@ -106,19 +103,24 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 			continue
 		}
 		if ls.showDetails {
-			st, err := getStat(file)
+			fi, err := file.Info()
 			if err != nil {
 				return nil, err
 			}
+			st, err := getStat(fi)
+			if err != nil {
+				return nil, err
+			}
+
 			// ファイルのパーミッション、オーナー、グループ、モード、サイズ、更新日時を表示する
 			fs = append(fs, &LS{
-				Mode:    file.Mode().String(),
+				Mode:    fi.Mode().String(),
 				Nlink:   st.nlink,
 				Owner:   st.owner,
 				Group:   st.group,
-				Size:    file.Size(),
-				ModTime: file.ModTime().Format("1 _2 15:04"),
-				Name:    file.Name(),
+				Size:    fi.Size(),
+				ModTime: fi.ModTime().Format("1 _2 15:04"),
+				Name:    fi.Name(),
 			})
 		} else {
 			// ファイル名だけ表示する
@@ -146,7 +148,7 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 }
 
 func main() {
-	nf := NewLsFlags()
+	nf := newLsFlags()
 	fs, err := Ls(nf)
 	if err != nil {
 		log.Fatal(err)
