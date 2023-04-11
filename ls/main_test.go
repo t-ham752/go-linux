@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io/fs"
 	"os"
 	"testing"
@@ -31,7 +32,7 @@ func TestLs(t *testing.T) {
 		},
 		{
 			name:  "'-a'フラグを渡して実行",
-			flags: &LsFlags{showAll: true},
+			flags: &LsFlags{ShowAll: true},
 			want: []*LS{
 				{Name: ".secret"},
 				{Name: "test_file.go"},
@@ -39,7 +40,7 @@ func TestLs(t *testing.T) {
 		},
 		{
 			name:  "'-l'フラグを渡して実行",
-			flags: &LsFlags{showDetails: true},
+			flags: &LsFlags{ShowDetails: true},
 			want: []*LS{
 				{
 					Name:  "test_file.go",
@@ -53,7 +54,7 @@ func TestLs(t *testing.T) {
 		},
 		{
 			name:  "'-l'と'-a'フラグを渡して実行",
-			flags: &LsFlags{showDetails: true, showAll: true},
+			flags: &LsFlags{ShowDetails: true, ShowAll: true},
 			want: []*LS{
 				{
 					Name:  ".secret",
@@ -75,7 +76,7 @@ func TestLs(t *testing.T) {
 		},
 		{
 			name:  "'-S'と'-l'と'-r'と'-a'フラグを渡して実行",
-			flags: &LsFlags{orderBySizeAsc: true, showDetails: true, showAll: true, reverse: true},
+			flags: &LsFlags{OrderBySizeAsc: true, ShowDetails: true, ShowAll: true, Reverse: true},
 			want: []*LS{
 				{
 					Name:  ".secret",
@@ -97,8 +98,8 @@ func TestLs(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			tt := tt
 			// ディレクトリを作成
 			if err := os.Mkdir("test", 0777); err != nil {
 				t.Fatal(err)
@@ -134,9 +135,41 @@ func TestLs(t *testing.T) {
 			}
 
 			for i, f := range fs {
-				if d := cmp.Diff(f, tt.want[i], cmpopts.IgnoreFields(*f, "ModTime")); len(d) != 0 {
+				if d := cmp.Diff(tt.want[i], f, cmpopts.IgnoreFields(*f, "ModTime")); len(d) != 0 {
 					t.Errorf("differs: (-got +want)\n%s", d)
 				}
+			}
+		})
+	}
+}
+
+func TestNewLsFlags(t *testing.T) {
+	tests := []struct {
+		name string
+		args []string
+		want *LsFlags
+	}{
+		{
+			name: "全表示のフラグを渡す",
+			args: []string{"-a"},
+			want: &LsFlags{
+				ShowAll: true,
+			},
+		},
+		{
+			name: "詳細表示のフラグを渡す",
+			args: []string{"-l"},
+			want: &LsFlags{
+				ShowDetails: true,
+			},
+		},
+	}
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+			if d := cmp.Diff(tt.want, NewLsFlags(tt.args)); len(d) != 0 {
+				t.Errorf("differs: (-got +want)\n%s", d)
 			}
 		})
 	}
