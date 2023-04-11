@@ -50,6 +50,10 @@ func getStat(fs fs.FileInfo) (*statT, error) {
 	}, nil
 }
 
+var (
+	commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+)
+
 type LsFlags struct {
 	showDetails    bool
 	showAll        bool
@@ -57,13 +61,15 @@ type LsFlags struct {
 	reverse        bool
 }
 
-func newLsFlags() *LsFlags {
+func newLsFlags(args []string) *LsFlags {
 	// オプションを受け取るためのフラグを定義する
-	showDetails := flag.Bool("l", false, "show details")
-	showAll := flag.Bool("a", false, "show all")
-	orderBySizeDesc := flag.Bool("S", false, "sort by size descending")
-	reverse := flag.Bool("r", false, "reverse order")
-	flag.Parse()
+	showDetails := commandLine.Bool("l", false, "show details")
+	showAll := commandLine.Bool("a", false, "show all")
+	orderBySizeDesc := commandLine.Bool("S", false, "sort by size descending")
+	reverse := commandLine.Bool("r", false, "reverse order")
+	if err := commandLine.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	}
 
 	return &LsFlags{
 		showDetails:    *showDetails,
@@ -148,7 +154,7 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 }
 
 func main() {
-	nf := newLsFlags()
+	nf := newLsFlags(os.Args[1:])
 	fs, err := Ls(nf)
 	if err != nil {
 		log.Fatal(err)
