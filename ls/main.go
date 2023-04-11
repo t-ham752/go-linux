@@ -163,6 +163,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, f := range fs {
+		// TODO: Lsの中でPrintする
 		if nf.ShowDetails {
 			fmt.Printf("%s %d %s %s %s %s %s\n", f.Mode, f.Nlink, f.Owner, f.Group, strconv.FormatInt(f.Size, 10), f.ModTime, f.Name)
 		} else {
