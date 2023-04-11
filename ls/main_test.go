@@ -168,7 +168,11 @@ func TestNewLsFlags(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-			if d := cmp.Diff(tt.want, NewLsFlags(tt.args)); len(d) != 0 {
+			got, err := NewLsFlags(tt.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if d := cmp.Diff(tt.want, got); len(d) != 0 {
 				t.Errorf("differs: (-got +want)\n%s", d)
 			}
 		})

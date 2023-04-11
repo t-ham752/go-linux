@@ -61,14 +61,14 @@ type LsFlags struct {
 	Reverse        bool
 }
 
-func NewLsFlags(args []string) *LsFlags {
+func NewLsFlags(args []string) (*LsFlags, error) {
 	// オプションを受け取るためのフラグを定義する
 	showDetails := commandLine.Bool("l", false, "show details")
 	showAll := commandLine.Bool("a", false, "show all")
 	orderBySizeDesc := commandLine.Bool("S", false, "sort by size descending")
 	reverse := commandLine.Bool("r", false, "reverse order")
 	if err := commandLine.Parse(args); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return nil, err
 	}
 
 	return &LsFlags{
@@ -76,7 +76,7 @@ func NewLsFlags(args []string) *LsFlags {
 		ShowAll:        *showAll,
 		OrderBySizeAsc: *orderBySizeDesc,
 		Reverse:        *reverse,
-	}
+	}, nil
 }
 
 type LS struct {
@@ -154,7 +154,10 @@ func Ls(ls *LsFlags) ([]*LS, error) {
 }
 
 func main() {
-	nf := NewLsFlags(os.Args[1:])
+	nf, err := NewLsFlags(os.Args[1:])
+	if err != nil {
+		log.Fatal(err)
+	}
 	fs, err := Ls(nf)
 	if err != nil {
 		log.Fatal(err)
