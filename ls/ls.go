@@ -1,10 +1,10 @@
-package main
+package ls
 
 import (
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
-	"log"
 	"os"
 	"os/user"
 	"sort"
@@ -12,13 +12,14 @@ import (
 	"syscall"
 )
 
-type statT struct {
-	nlink uint16
-	owner string
-	group string
+type StatT struct {
+	// exportしないとcmpで比較できない
+	Nlink uint16
+	Owner string
+	Group string
 }
 
-func getStat(fs fs.FileInfo) (*statT, error) {
+func getStat(fs fs.FileInfo) (*StatT, error) {
 	var owner, group string
 	stat, ok := fs.Sys().(*syscall.Stat_t)
 	if !ok {
@@ -43,10 +44,10 @@ func getStat(fs fs.FileInfo) (*statT, error) {
 		group = g.Name
 	}
 
-	return &statT{
-		nlink: stat.Nlink,
-		owner: owner,
-		group: group,
+	return &StatT{
+		Nlink: stat.Nlink,
+		Owner: owner,
+		Group: group,
 	}, nil
 }
 
@@ -55,13 +56,14 @@ var (
 )
 
 type LsFlags struct {
+	// exportしないとcmpで比較できない
 	ShowDetails    bool
 	ShowAll        bool
 	OrderBySizeAsc bool
 	Reverse        bool
 }
 
-func NewLsFlags(args []string) (*LsFlags, error) {
+func newLsFlags(args []string) (*LsFlags, error) {
 	// オプションを受け取るためのフラグを定義する
 	showDetails := commandLine.Bool("l", false, "show details")
 	showAll := commandLine.Bool("a", false, "show all")
@@ -79,95 +81,99 @@ func NewLsFlags(args []string) (*LsFlags, error) {
 	}, nil
 }
 
-type LS struct {
-	Mode    string
-	Nlink   uint16
-	Owner   string
-	Group   string
-	Size    int64
-	ModTime string
-	Name    string
+type lsOutput struct {
+	mode    string
+	nlink   uint16
+	owner   string
+	group   string
+	size    int64
+	modTime string
+	name    string
 }
 
-func Ls(ls *LsFlags) ([]*LS, error) {
+func run(fs *LsFlags, w io.Writer) error {
 	// 現在の作業ディレクトリを取得する
 	wd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// ファイル一覧を表示する
 	files, err := os.ReadDir(wd)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	fs := make([]*LS, 0, len(files))
+	ls := make([]*lsOutput, 0, len(files))
 	for _, file := range files {
-		if !ls.ShowAll && file.Name()[0] == '.' {
+		if !fs.ShowAll && file.Name()[0] == '.' {
 			// -a オプションが指定されていない場合、隠しファイルを表示しない
 			continue
 		}
-		if ls.ShowDetails {
+		if fs.ShowDetails {
 			fi, err := file.Info()
 			if err != nil {
-				return nil, err
+				return err
 			}
 			st, err := getStat(fi)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			// ファイルのパーミッション、オーナー、グループ、モード、サイズ、更新日時を表示する
-			fs = append(fs, &LS{
-				Mode:    fi.Mode().String(),
-				Nlink:   st.nlink,
-				Owner:   st.owner,
-				Group:   st.group,
-				Size:    fi.Size(),
-				ModTime: fi.ModTime().Format("1 _2 15:04"),
-				Name:    fi.Name(),
+			ls = append(ls, &lsOutput{
+				mode:    fi.Mode().String(),
+				nlink:   st.Nlink,
+				owner:   st.Owner,
+				group:   st.Group,
+				size:    fi.Size(),
+				modTime: fi.ModTime().Format("1 _2 15:04"),
+				name:    fi.Name(),
 			})
 		} else {
 			// ファイル名だけ表示する
-			fs = append(fs, &LS{
-				Name: file.Name(),
+			ls = append(ls, &lsOutput{
+				name: file.Name(),
 			})
 		}
 	}
 
 	// 昇順にソートする
-	if ls.OrderBySizeAsc {
-		sort.SliceStable(fs, func(i, j int) bool {
-			return fs[i].Size > fs[j].Size
+	if fs.OrderBySizeAsc {
+		sort.SliceStable(ls, func(i, j int) bool {
+			return ls[i].size > ls[j].size
 		})
 	}
 
 	// 表示順を反対にする
-	if ls.Reverse {
-		for i, j := 0, len(fs)-1; i < j; i, j = i+1, j-1 {
-			fs[i], fs[j] = fs[j], fs[i]
+	if fs.Reverse {
+		for i, j := 0, len(ls)-1; i < j; i, j = i+1, j-1 {
+			ls[i], ls[j] = ls[j], ls[i]
 		}
 	}
 
-	return fs, nil
+	// 出力する
+	for _, l := range ls {
+		if fs.ShowDetails {
+			fmt.Fprintf(w, "%s %d %s %s %s %s %s\n", l.mode, l.nlink, l.owner, l.group, strconv.FormatInt(l.size, 10), l.modTime, l.name)
+		} else {
+			fmt.Fprintln(w, l.name)
+		}
+	}
+
+	return nil
 }
 
-func main() {
-	nf, err := NewLsFlags(os.Args[1:])
+func Ls() error {
+	fs, err := newLsFlags(os.Args[1:])
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	fs, err := Ls(nf)
+
+	err = run(fs, os.Stdout)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-	for _, f := range fs {
-		// TODO: Lsの中でPrintする
-		if nf.ShowDetails {
-			fmt.Printf("%s %d %s %s %s %s %s\n", f.Mode, f.Nlink, f.Owner, f.Group, strconv.FormatInt(f.Size, 10), f.ModTime, f.Name)
-		} else {
-			fmt.Println(f.Name)
-		}
-	}
+
+	return nil
 }

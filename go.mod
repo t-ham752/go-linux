@@ -1,4 +1,4 @@
-module go-linux
+module github.com/t-ham752/go-linux
 
 go 1.20
 
