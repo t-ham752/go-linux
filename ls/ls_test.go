@@ -28,7 +28,6 @@ func TestNewLsFlags(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 			got, err := newLsFlags(tt.args)
@@ -65,7 +64,6 @@ test_file.txt
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			os.Chdir("testdata")
 			t.Cleanup(func() {
@@ -101,7 +99,6 @@ func TestGetStat(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			os.Chdir("testdata")
 			t.Cleanup(func() {
@@ -126,3 +123,29 @@ func TestGetStat(t *testing.T) {
 		})
 	}
 }
+
+// func TestLs(t *testing.T) {
+// 	tests := []struct {
+// 		name string
+// 		args []string
+// 	}{
+// 		// {
+// 		// 	name: "フラグなし",
+// 		// 	args: []string{},
+// 		// },
+// 		{
+// 			name: "'-a'を渡す",
+// 			args: []string{"-a"},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			// commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+// 			stdout := bytes.Buffer{}
+// 			err := Ls(&stdout)
+// 			if err != nil {
+// 				t.Fatal(err)
+// 			}
+// 		})
+// 	}
+// }

@@ -164,13 +164,13 @@ func run(fs *LsFlags, w io.Writer) error {
 	return nil
 }
 
-func Ls() error {
+func Ls(w io.Writer) error {
 	fs, err := newLsFlags(os.Args[1:])
 	if err != nil {
 		return err
 	}
 
-	err = run(fs, os.Stdout)
+	err = run(fs, w)
 	if err != nil {
 		return err
 	}
