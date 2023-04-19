@@ -5,7 +5,7 @@
 $ go install github.com/t-ham752/go-linux/cmd/${cmd_name}@latest
 
 # ls command
-$ go install github.com/t-ham752/go-linux/cmd/ls@latest
+$ go install github.com/t-ham752/go-linux/cmd/gols@latest
 ```
 
 ## Usage
@@ -15,8 +15,4 @@ $ go install github.com/t-ham752/go-linux/cmd/ls@latest
   -a	show all
   -l	show details
   -r	reverse order
-```
-
-```shell
-$ ~/go/bin/ls -l -a
 ```
