@@ -2,13 +2,12 @@ package main
 
 import (
 	"log"
-	"os"
 
-	"github.com/t-ham752/go-linux/pkg/ls"
+	"github.com/t-ham752/go-linux/pkg/cat"
 )
 
 func main() {
-	err := ls.Ls(os.Stdout)
+	err := cat.Cat()
 	if err != nil {
 		log.Fatal(err)
 	}
