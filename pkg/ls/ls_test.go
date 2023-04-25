@@ -41,6 +41,9 @@ func TestNewLsFlags(t *testing.T) {
 	}
 }
 
+func getFixedModTime(c clocker) string {
+	return "4 24 19:37"
+}
 func TestRun(t *testing.T) {
 	tests := []struct {
 		name string
@@ -62,6 +65,13 @@ test_file.go
 test_file.txt
 `,
 		},
+		{
+			name: "'-l'を渡してファイルの詳細を表示する",
+			fs:   &LsFlags{ShowDetails: true},
+			want: `-rw-r--r-- 1 hamoro staff 0 4 24 19:37 test_file.go
+-rw-r--r-- 1 hamoro staff 0 4 24 19:37 test_file.txt
+`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,9 +79,8 @@ test_file.txt
 			t.Cleanup(func() {
 				os.Chdir("..")
 			})
-
 			stdout := bytes.Buffer{}
-			err := run(tt.fs, &stdout)
+			err := run(tt.fs, &stdout, getFixedModTime)
 			if err != nil {
 				t.Fatal(err)
 			}
