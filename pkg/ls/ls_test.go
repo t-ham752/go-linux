@@ -41,9 +41,6 @@ func TestNewLsFlags(t *testing.T) {
 	}
 }
 
-func getFixedModTime(c clocker) string {
-	return "4 24 19:37"
-}
 func TestRun(t *testing.T) {
 	tests := []struct {
 		name string
@@ -80,7 +77,7 @@ test_file.txt
 				os.Chdir("..")
 			})
 			stdout := bytes.Buffer{}
-			err := run(tt.fs, &stdout, getFixedModTime)
+			err := run(tt.fs, &stdout)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -132,29 +129,3 @@ func TestGetStat(t *testing.T) {
 		})
 	}
 }
-
-// func TestLs(t *testing.T) {
-// 	tests := []struct {
-// 		name string
-// 		args []string
-// 	}{
-// 		// {
-// 		// 	name: "フラグなし",
-// 		// 	args: []string{},
-// 		// },
-// 		{
-// 			name: "'-a'を渡す",
-// 			args: []string{"-a"},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// commandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-// 			stdout := bytes.Buffer{}
-// 			err := Ls(&stdout)
-// 			if err != nil {
-// 				t.Fatal(err)
-// 			}
-// 		})
-// 	}
-// }

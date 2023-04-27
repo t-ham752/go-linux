@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"syscall"
-	"time"
 )
 
 type StatT struct {
@@ -92,15 +91,7 @@ type lsOutput struct {
 	name    string
 }
 
-type clocker interface {
-	ModTime() time.Time
-}
-
-func getModTime(c clocker) string {
-	return c.ModTime().Format("1 _2 15:04")
-}
-
-func run(fs *LsFlags, w io.Writer, getModTime func(c clocker) string) error {
+func run(fs *LsFlags, w io.Writer) error {
 	// 現在の作業ディレクトリを取得する
 	wd, err := os.Getwd()
 	if err != nil {
@@ -136,7 +127,7 @@ func run(fs *LsFlags, w io.Writer, getModTime func(c clocker) string) error {
 				owner:   st.Owner,
 				group:   st.Group,
 				size:    fi.Size(),
-				modTime: getModTime(fi), // 他に良い方法がないか
+				modTime: fi.ModTime().Format("1 _2 15:04"),
 				name:    fi.Name(),
 			})
 		} else {
@@ -179,7 +170,7 @@ func Ls(w io.Writer) error {
 		return err
 	}
 
-	err = run(fs, w, getModTime)
+	err = run(fs, w)
 	if err != nil {
 		return err
 	}
