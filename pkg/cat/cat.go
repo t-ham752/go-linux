@@ -6,11 +6,11 @@ import (
 	"os"
 )
 
-func run(r io.Reader, w io.Writer) error {
-	if len(os.Args) < 2 {
+func run(args []string, w io.Writer) error {
+	if len(args) < 2 {
 		return fmt.Errorf("too few arguments")
 	}
-	for _, arg := range os.Args[1:] {
+	for _, arg := range args[1:] {
 		file, err := os.Open(arg)
 		if err != nil {
 			return err
@@ -20,7 +20,7 @@ func run(r io.Reader, w io.Writer) error {
 	return nil
 }
 func Cat() error {
-	err := run(os.Stdin, os.Stdout)
+	err := run(os.Args, os.Stdout)
 	if err != nil {
 		return err
 	}
